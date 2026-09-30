@@ -24,7 +24,16 @@ class DriverHandler(BaseHTTPRequestHandler):
     def do_PUT(self):
 
         # Get driver ID from URL
-        driver_id = int(self.path.split("/")[-1])
+        try:
+            driver_id = int(self.path.split("/")[-1])
+        except ValueError:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(
+                json.dumps({"error": "Invalid driver ID"}).encode()
+            )
+            return
 
         # Find the driver
         for driver in drivers:
@@ -35,12 +44,20 @@ class DriverHandler(BaseHTTPRequestHandler):
                 content_length = int(self.headers["Content-Length"])
                 body = self.rfile.read(content_length)
 
-                data = json.loads(body)
-
-                # Update driver
-                driver["driverName"] = data["driverName"]
-                driver["driverAvailability"] = data["driverAvailability"]
-                driver["driverVehiclePlateNumber"] = data["driverVehiclePlateNumber"]
+                # Parse and validate the body
+                try:
+                    data = json.loads(body)
+                    driver["driverName"] = data["driverName"]
+                    driver["driverAvailability"] = data["driverAvailability"]
+                    driver["driverVehiclePlateNumber"] = data["driverVehiclePlateNumber"]
+                except (json.JSONDecodeError, KeyError):
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(
+                        json.dumps({"error": "Missing or invalid fields"}).encode()
+                    )
+                    return
 
                 # Send response
                 self.send_response(200)
@@ -67,7 +84,16 @@ class DriverHandler(BaseHTTPRequestHandler):
     def do_DELETE(self):
 
         # Get driver ID from URL
-        driver_id = int(self.path.split("/")[-1])
+        try:
+            driver_id = int(self.path.split("/")[-1])
+        except ValueError:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(
+                json.dumps({"error": "Invalid driver ID"}).encode()
+            )
+            return
 
         # Find the driver
         for driver in drivers:
